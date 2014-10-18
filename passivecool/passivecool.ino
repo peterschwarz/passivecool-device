@@ -97,13 +97,19 @@ void updateSensorReadings() {
 
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  humidity = dht.readHumidity();
+  float updated_humidity;
+  updated_humidity = dht.readHumidity();
+
+  if(!isnan(updated_humidity) && updated_humidity != NAN) {
+    humidity = updated_humidity;
+  }
+
   // Read temperature as Fahrenheit
   temperature = dht.readTemperature(true);
   
-  int light_sensor1;
+  int light_sensor1, light_sensor2;
+
   light_sensor1 = analogRead(0);
-  int light_sensor2;
   light_sensor2 = analogRead(1);
 
   light_level = (light_sensor1 + light_sensor2) / 2;  
@@ -125,7 +131,7 @@ void loop() {
     client.stop();
   }
   
-    delay(2000);
+  delay(1000);
 
 }
 
@@ -204,4 +210,5 @@ int modeCommand(YunClient client) {
 
     return 1;
 }
+
 
