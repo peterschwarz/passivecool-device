@@ -28,6 +28,9 @@
 
 #define TIME_FOR_90 6000
 
+#define MODE_AUTO 0
+#define MODE_MANUAL 1
+
 YunServer server;
 Servo servo1;
 ContinuousServo cservo1;
@@ -36,6 +39,8 @@ int position = 0;
 float temperature = 0.0;
 float humidity = 0.0;
 int light_level = 0;
+
+int current_mode = MODE_AUTO;
 
 
 void setup() {
@@ -95,6 +100,8 @@ void process(YunClient client) {
     
     if (command.indexOf("state") == 0) {
       stateCommand(client);    
+    } else if (command.indexOf("mode") == 0) {
+      modeCommand(client);
     } else {
        client.print(F("Error: command "));
        client.print(command);
@@ -135,6 +142,30 @@ int stateCommand(YunClient client) {
     client.print(light_level); 
     client.println(F("}"));
   }
+}
+
+int modeCommand(YunClient client) {
+    if (client.peek() < 0) { 
+      client.print(F("{\"mode\":"));
+      client.print(current_mode == MODE_AUTO ? F("auto") : F("manual"));
+      return 0;
+    } 
+
+    String mode = client.readString();
+
+    if (mode.indexOf(F("auto")) >= 0) {
+      current_mode = MODE_AUTO;
+      client.println(F("ok"));
+    } else if (mode.indexOf(F("manual")) >= 0) {
+      current_mode = MODE_MANUAL;
+      client.println(F("ok"));
+    } else {
+      client.print(F("{error: \"unknown mode "));
+      client.print(mode);
+      client.println(F("\"}"));
+    }
+
+    return 1;
 }
 
 
