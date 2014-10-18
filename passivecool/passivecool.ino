@@ -91,19 +91,9 @@ void flash13()
     delay(100);
     digitalWrite(13, LOW);
   }
-
 }
 
-void loop() {
-  // Get clients coming from the server
-  YunClient client = server.accept();
-  
-  if (client) {
-    process(client);
-    client.stop();
-  }
-  
-    delay(2000);
+void updateSensorReadings() {
 
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -117,6 +107,26 @@ void loop() {
   light_sensor2 = analogRead(1);
 
   light_level = (light_sensor1 + light_sensor2) / 2;  
+}
+
+void loop() {
+
+  updateSensorReadings();
+
+  if (current_mode == MODE_AUTO) {
+    // TODO: calculate
+  }
+
+  // Get clients coming from the server
+  YunClient client = server.accept();
+  
+  if (client) {
+    process(client);
+    client.stop();
+  }
+  
+    delay(2000);
+
 }
 
 void process(YunClient client) {
@@ -171,12 +181,14 @@ int stateCommand(YunClient client) {
 
 int modeCommand(YunClient client) {
     if (client.peek() < 0) { 
-      client.print(F("{\"mode\":"));
+      client.print(F("{\"mode\": \""));
       client.print(current_mode == MODE_AUTO ? F("auto") : F("manual"));
+      client.println(F("\"}"));
+
       return 0;
     } 
 
-    String mode = client.readString();
+    String mode = client.readStringUntil('/');
 
     if (mode.indexOf(F("auto")) >= 0) {
       current_mode = MODE_AUTO;
@@ -192,6 +204,4 @@ int modeCommand(YunClient client) {
 
     return 1;
 }
-
-
 
