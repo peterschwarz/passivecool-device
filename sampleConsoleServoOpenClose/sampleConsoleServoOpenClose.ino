@@ -34,14 +34,14 @@ void loop() {
 
 void openBlind() {
   myServo.writeMicroseconds(1700);
-  delay(3000);
+  delay(6000);
   myServo.writeMicroseconds(1515);
   delay(3000);
 }
 
 void closeBlind() {
    myServo.writeMicroseconds(1300);
-   delay(3000);
+   delay(6000);
    myServo.writeMicroseconds(1515);
    delay(3000);
 }
