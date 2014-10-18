@@ -17,16 +17,26 @@
 
   created 14 December 2013
   by Jeff Hoefs
-  */
+  
+  modified by Peter Schwarz and Baskin Tapkan
+   IoT Hack Day MN - October 2014  
+   */
   
 #include <Bridge.h>
 //#include <Console.h>
 #include <YunServer.h>
 #include <YunClient.h>
 #include <Servo.h>
+#include <DHT.h>
 #include "ContinuousServo.h"
 
 #define TIME_FOR_90 6000
+#define DHTPIN 2
+
+#define DHTTYPE DHT22
+
+// initialize DHT sensor for normal 16 MHz Arduino
+DHT dht(DHTPIN, DHTTYPE);
 
 #define MODE_AUTO 0
 #define MODE_MANUAL 1
@@ -65,6 +75,8 @@ void setup() {
 
   flash13();
   
+  dht.begin();
+  
   // Listen for incoming connection only from localhost
   // (no one from the external network can connect)
   server.begin();
@@ -91,7 +103,20 @@ void loop() {
     client.stop();
   }
   
-  delay(50);
+    delay(2000);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  humidity = dht.readHumidity();
+  // Read temperature as Fahrenheit
+  temperature = dht.readTemperature(true);
+  
+  int light_sensor1;
+  light_sensor1 = analogRead(0);
+  int light_sensor2;
+  light_sensor2 = analogRead(1);
+
+  light_level = (light_sensor1 + light_sensor2) / 2;  
 }
 
 void process(YunClient client) {
