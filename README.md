@@ -1,2 +1,2 @@
- # Passive Cool Team Project
+ Passive Cool Team Project
 ==============
