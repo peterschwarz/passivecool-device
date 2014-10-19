@@ -112,7 +112,10 @@ void updateSensorReadings() {
 void calculatePosition()
 {
     int new_position = map(light_level, 0, 1023, 0, 90);
-    updatePosition(new_position);
+
+    if (abs(new_position - position) > 4) {
+      updatePosition(new_position);
+    }
 }
 
 void updatePosition(int new_position) {
@@ -169,13 +172,13 @@ void process(YunClient client) {
 }
 
 int closeBlind(int move_time) {
-  cservo1.counterclockwise();
+  cservo1.clockwise();
   delay(move_time); // todo move based on percentage of degrees
   cservo1.stop();
 }
 
 int openBlind(int move_time) {
-  cservo1.clockwise();
+  cservo1.counterclockwise();
   delay(move_time);
   cservo1.stop();
 }
