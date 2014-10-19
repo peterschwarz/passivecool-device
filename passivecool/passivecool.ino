@@ -30,7 +30,10 @@
 #include <DHT.h>
 #include "ContinuousServo.h"
 
-#define TIME_FOR_90 6000
+#define TIME_FOR_90 6144
+
+#define SERVO_PIN 9
+
 #define DHTPIN 2
 
 #define DHTTYPE DHT22
@@ -55,17 +58,8 @@ int current_mode = MODE_AUTO;
 
 void setup() {
   
-  servo1.attach(9);
+  servo1.attach(SERVO_PIN);
   cservo1.attach(servo1);
-  
-  // Wakeup 
-  cservo1.counterclockwise();
-  delay(100);
-  
-  cservo1.clockwise();
-  delay(100);
-  
-  cservo1.stop();
 
   pinMode(13, OUTPUT);
 
@@ -115,12 +109,35 @@ void updateSensorReadings() {
   light_level = (light_sensor1 + light_sensor2) / 2;  
 }
 
+void calculatePosition()
+{
+    int new_position = map(light_level, 0, 1023, 0, 90);
+    updatePosition(new_position);
+}
+
+void updatePosition(int new_position) {
+  int time_to_move;
+
+  if (new_position == position) {
+      return;
+  }
+  
+  if (new_position < position) {
+    time_to_move = TIME_FOR_90 * ((position - new_position) / 90.0);
+    openBlind(time_to_move);
+  } else {
+    time_to_move = TIME_FOR_90 * ((new_position - position) / 90.0);
+    closeBlind(time_to_move);
+  }
+  position = new_position;
+}
+
 void loop() {
 
   updateSensorReadings();
 
   if (current_mode == MODE_AUTO) {
-    // TODO: calculate
+    calculatePosition();
   }
 
   // Get clients coming from the server
@@ -151,45 +168,32 @@ void process(YunClient client) {
   }
 }
 
+int closeBlind(int move_time) {
+  cservo1.counterclockwise();
+  delay(move_time); // todo move based on percentage of degrees
+  cservo1.stop();
+}
+
+int openBlind(int move_time) {
+  cservo1.clockwise();
+  delay(move_time);
+  cservo1.stop();
+}
+
 // expecting "/open/
 int stateCommand(YunClient client) {
   int move = 0;
   if (client.peek() >= 0) {
-      move = client.parseInt();
-      
-      if (move > 90) {
-        cservo1.counterclockwise();
-        delay(TIME_FOR_90); // todo move based on percentage of degrees
-        cservo1.stop();
-      } else if (move < 90) {
-        cservo1.clockwise();
-        delay(TIME_FOR_90);
-        cservo1.stop();
-      } else {
-        // TOOD: center?
-      }
-      
+    move = constrain(client.parseInt(), 0, 90);
+    updatePosition(move);
   } else {
-    client.print(F("{\"position\":"));
-    client.print(position); 
-    client.print(F(", "));
-    client.print(F("\"temperature\":"));
-    client.print(temperature); 
-    client.print(F(", "));
-    client.print(F("\"humidity\":"));
-    client.print(humidity); 
-    client.print(F(", "));
-    client.print(F("\"light_level\":"));
-    client.print(light_level); 
-    client.println(F("}"));
+    sendState(client);
   }
 }
 
 int modeCommand(YunClient client) {
     if (client.peek() < 0) { 
-      client.print(F("{\"mode\": \""));
-      client.print(current_mode == MODE_AUTO ? F("auto") : F("manual"));
-      client.println(F("\"}"));
+      sendMode(client);
 
       return 0;
     } 
@@ -211,4 +215,24 @@ int modeCommand(YunClient client) {
     return 1;
 }
 
+void sendState(YunClient client) {
+  client.print(F("{\"position\":"));
+  client.print(position + 90); 
+  client.print(F(", "));
+  client.print(F("\"temperature\":"));
+  client.print(temperature); 
+  client.print(F(", "));
+  client.print(F("\"humidity\":"));
+  client.print(humidity); 
+  client.print(F(", "));
+  client.print(F("\"light_level\":"));
+  client.print(light_level); 
+  client.println(F("}"));
+}
 
+
+void sendMode(YunClient client) {
+  client.print(F("{\"mode\": \""));
+  client.print(current_mode == MODE_AUTO ? F("auto") : F("manual"));
+  client.println(F("\"}"));
+}
