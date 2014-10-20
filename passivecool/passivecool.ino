@@ -159,7 +159,11 @@ void process(YunClient client) {
   if (client.available() > 0) {
     String command = client.readStringUntil('/');
     
-    if (command.indexOf("state") == 0) {
+    if (command.indexOf("open") == 0) {
+      openByCommand(client);
+    } else if (command.indexOf("close") == 0) {
+      closeByCommand(client);
+    } else if (command.indexOf("state") == 0) {
       stateCommand(client);    
     } else if (command.indexOf("mode") == 0) {
       modeCommand(client);
@@ -183,12 +187,32 @@ int openBlind(int move_time) {
   cservo1.stop();
 }
 
+int openByCommand(YunClient client) {
+    if (client.peek() < 0) { 
+      return 0; 
+    } 
+
+    int move_time = client.parseInt();
+    openBlind(move_time);
+}
+
+int closeByCommand(YunClient client) {
+    if (client.peek() < 0) { 
+      return 0; 
+    } 
+
+    int move_time = client.parseInt();
+    closeBlind(move_time);
+}
+
+
 // expecting "/open/
 int stateCommand(YunClient client) {
   int move = 0;
   if (client.peek() >= 0) {
     move = constrain(client.parseInt(), 0, 90);
     updatePosition(move);
+    sendOk(client);
   } else {
     sendState(client);
   }
@@ -205,10 +229,10 @@ int modeCommand(YunClient client) {
 
     if (mode.indexOf(F("auto")) >= 0) {
       current_mode = MODE_AUTO;
-      client.println(F("ok"));
+      sendOk(client);
     } else if (mode.indexOf(F("manual")) >= 0) {
       current_mode = MODE_MANUAL;
-      client.println(F("ok"));
+      sendOk(client);
     } else {
       client.print(F("{error: \"unknown mode "));
       client.print(mode);
@@ -216,6 +240,10 @@ int modeCommand(YunClient client) {
     }
 
     return 1;
+}
+
+void sendOk(YunClient client) {
+  client.println(F("ok"));
 }
 
 void sendState(YunClient client) {
